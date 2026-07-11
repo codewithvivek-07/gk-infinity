@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Primary SEO Meta Tags -->
+    <title>GK Infinity | Premium Law Entrance Coaching (CLAT/AILET/SLAT)</title>
+    <meta name="description" content="GK Infinity is the premier mentorship platform for CLAT, AILET, and OLETs aspirants, founded by Prakhar Mishra (AIR 972, NLU Odisha). Get structured daily coaching, live classes, mocks, and GK Elixir." />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="GK Infinity | CLAT & Law Entrance Preparation" />
+    <meta property="og:description" content="Structured daily supervision, live lectures, comprehensive mock tests, and personal mentorship under Prakhar Mishra." />
+    <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/edufinity-26856.firebasestorage.app/o/batch-images%2F1782723064373_COURSE%20TN%20(1).png?alt=media" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Material Icons (used inside course contents) -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>♾️</text></svg>" />
+  </head>
+  <body>
+    <!-- App Container -->
+    <div id="app">
+      <!-- Premium Loading Overlay -->
+      <div id="global-loader" class="global-loader">
+        <div class="loader-content">
+          <div class="loader-logo">♾️</div>
+          <div class="loader-bar-container">
+            <div class="loader-bar"></div>
+          </div>
+          <p class="loader-text">Connecting to GK Infinity...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modals & Overlays -->
+    
+    <!-- Enrollment Checkout Simulation Modal -->
+    <div id="checkout-modal" class="modal-overlay hidden" aria-hidden="true">
+      <div class="modal-card">
+        <button id="close-checkout-btn" class="modal-close-btn" aria-label="Close modal">&times;</button>
+        <div class="modal-header">
+          <div class="modal-title-wrapper">
+            <span class="modal-badge">Simulation</span>
+            <h2 id="modal-batch-title" class="modal-title">Enroll in Course</h2>
+          </div>
+          <p class="modal-subtitle">Secure your NLU seat with personalized daily supervision.</p>
+        </div>
+        <div class="modal-body">
+          <form id="checkout-form" class="checkout-form">
+            <div class="form-group">
+              <label for="student-name">Student Full Name</label>
+              <input type="text" id="student-name" required placeholder="e.g. Priyanshu Sharma" />
+            </div>
+            <div class="form-group">
+              <label for="student-email">Email Address</label>
+              <input type="email" id="student-email" required placeholder="e.g. priyanshu@example.com" />
+            </div>
+            <div class="form-group">
+              <label for="student-phone">Phone Number (WhatsApp)</label>
+              <input type="tel" id="student-phone" required pattern="[0-9]{10}" placeholder="e.g. 9876543210" />
+            </div>
+            <div class="pricing-summary">
+              <div class="price-row">
+                <span>Course Price</span>
+                <span id="summary-original-price" class="original-strikethrough">₹0</span>
+              </div>
+              <div class="price-row highlight">
+                <span>Discounted Price</span>
+                <span id="summary-discounted-price" class="final-price">₹0</span>
+              </div>
+              <div class="price-row savings">
+                <span>You Save</span>
+                <span id="summary-savings-price">₹0</span>
+              </div>
+            </div>
+            <button type="submit" id="submit-checkout-btn" class="submit-checkout-btn">
+              <span>Complete simulated enrollment</span>
+              <i class="material-icons">arrow_forward</i>
+            </button>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <i class="material-icons lock-icon">lock</i>
+          <span>This is a simulated secure checkout. No real money will be charged.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div id="video-modal" class="modal-overlay hidden" aria-hidden="true">
+      <div class="video-modal-card">
+        <button id="close-video-btn" class="video-close-btn" aria-label="Close Video">&times;</button>
+        <div id="video-container" class="video-container">
+          <!-- Dynamically inserted iframe/player -->
+        </div>
+        <div class="video-modal-details">
+          <h3 id="video-modal-title">Video Lecture</h3>
+          <p id="video-modal-desc">GK Infinity Interactive Learning Session</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Toast Notification -->
+    <div id="success-toast" class="toast hidden">
+      <div class="toast-content">
+        <i class="material-icons toast-icon">check_circle</i>
+        <div class="toast-message">
+          <strong id="toast-title">Success!</strong>
+          <span id="toast-body">Operation completed.</span>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
