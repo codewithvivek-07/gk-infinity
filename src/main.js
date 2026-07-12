@@ -8,8 +8,38 @@ const state = {
   batches: [],
   pages: [],
   enrolledBatchIds: JSON.parse(localStorage.getItem('gki_enrolled_batches')) || [],
-  activeCheckoutBatch: null
+  activeCheckoutBatch: null,
+  selectedSubjectIndex: null, // Active subject details index
+  selectedSubTab: 'classes'   // Active sub-tab inside subject details
 };
+
+// Dynamic color coordination for curriculum subject folders
+function getSubjectTheme(name, index) {
+  const themes = [
+    { color: 'hsl(263, 90%, 65%)', bg: 'hsla(263, 90%, 65%, 0.15)', icon: 'folder' }, // Purple
+    { color: 'hsl(43, 96%, 56%)', bg: 'hsla(43, 96%, 56%, 0.15)', icon: 'palette' },   // Gold/Yellow
+    { color: 'hsl(280, 85%, 60%)', bg: 'hsla(280, 85%, 60%, 0.15)', icon: 'bookmark' }, // Violet
+    { color: 'hsl(195, 90%, 50%)', bg: 'hsla(195, 90%, 50%, 0.15)', icon: 'book' },     // Blue
+    { color: 'hsl(142, 70%, 45%)', bg: 'hsla(142, 70%, 45%, 0.15)', icon: 'class' },    // Green
+    { color: 'hsl(346, 80%, 60%)', bg: 'hsla(346, 80%, 60%, 0.15)', icon: 'school' },   // Red/Pink
+    { color: 'hsl(25, 95%, 55%)', bg: 'hsla(25, 95%, 55%, 0.15)', icon: 'star' },       // Orange
+    { color: 'hsl(165, 80%, 40%)', bg: 'hsla(165, 80%, 40%, 0.15)', icon: 'layers' }    // Teal
+  ];
+
+  const lower = name.toLowerCase();
+  if (lower.includes('magicbox')) return { color: 'hsl(43, 96%, 56%)', bg: 'hsla(43, 96%, 56%, 0.15)', icon: 'palette' };
+  if (lower.includes('mock')) return { color: 'hsl(280, 85%, 60%)', bg: 'hsla(280, 85%, 60%, 0.15)', icon: 'bookmark' };
+  if (lower.includes('elixir')) return { color: 'hsl(195, 90%, 50%)', bg: 'hsla(195, 90%, 50%, 0.15)', icon: 'book' };
+  if (lower.includes('current affairs')) return { color: 'hsl(142, 70%, 45%)', bg: 'hsla(142, 70%, 45%, 0.15)', icon: 'menu_book' };
+  if (lower.includes('legal')) return { color: 'hsl(263, 90%, 65%)', bg: 'hsla(263, 90%, 65%, 0.15)', icon: 'gavel' };
+  if (lower.includes('critical')) return { color: 'hsl(25, 95%, 55%)', bg: 'hsla(25, 95%, 55%, 0.15)', icon: 'psychology' };
+  if (lower.includes('english')) return { color: 'hsl(346, 80%, 60%)', bg: 'hsla(346, 80%, 60%, 0.15)', icon: 'translate' };
+  if (lower.includes('quant') || lower.includes('math')) return { color: 'hsl(195, 90%, 50%)', bg: 'hsla(195, 90%, 50%, 0.15)', icon: 'calculate' };
+  if (lower.includes('general')) return { color: 'hsl(263, 90%, 65%)', bg: 'hsla(263, 90%, 65%, 0.15)', icon: 'folder' };
+  
+  return themes[index % themes.length];
+}
+
 
 function saveEnrollments() {
   localStorage.setItem('gki_enrolled_batches', JSON.stringify(state.enrolledBatchIds));
@@ -398,111 +428,180 @@ function renderBatchDetailView(batchId) {
   const subjectsArray = batch.subjects || [];
   
   // Render Subjects and Material
-  const subjectsHtml = subjectsArray.length > 0 
-    ? subjectsArray.map((subj, index) => {
-        const videos = subj.videos || [];
-        const notes = subj.notes || [];
-        const totalItems = videos.length + notes.length;
-        
-        let materialsRows = '';
-        
-        if (totalItems === 0) {
-          materialsRows = `
-            <div class="materials-empty-box">
-              <i class="material-icons">folder_open</i>
-              <p>Learning modules are being uploaded for this subject folder.</p>
-            </div>`;
-        } else {
-          // Render videos
-          const videoRows = videos.map(vid => {
-            const unlocked = enrolled || vid.allowUnenrolledAccess;
-            
-            return `
-              <li class="material-row-item">
-                <div class="material-left">
-                  <i class="material-icons video-icon">play_circle_filled</i>
-                  <div class="title-meta">
-                    <h4>${vid.title}</h4>
-                    <span>Duration: ${vid.duration || 'Interactive class'}</span>
-                  </div>
-                </div>
-                <div class="material-right">
-                  ${unlocked 
-                    ? `<button class="material-right-action-btn play-video-trigger" data-title="${vid.title}" data-url="${vid.videoUrl}">
-                         <span>Play Lecture</span>
-                         <i class="material-icons">play_arrow</i>
-                       </button>`
-                    : `<span class="material-right-locked">
-                         <span>Locked</span>
-                         <i class="material-icons">lock</i>
-                       </span>`
-                  }
-                </div>
-              </li>
-            `;
-          }).join('');
-          
-          // Render notes
-          const noteRows = notes.map(note => {
-            const unlocked = enrolled || note.allowUnenrolledAccess;
-            
-            return `
-              <li class="material-row-item">
-                <div class="material-left">
-                  <i class="material-icons pdf-icon">description</i>
-                  <div class="title-meta">
-                    <h4>${note.title}</h4>
-                    <span>Study Booklet (PDF)</span>
-                  </div>
-                </div>
-                <div class="material-right">
-                  ${unlocked 
-                    ? `<a href="${note.fileUrl}" target="_blank" class="material-right-action-btn">
-                         <span>Download PDF</span>
-                         <i class="material-icons">cloud_download</i>
-                       </a>`
-                    : `<span class="material-right-locked">
-                         <span>Locked</span>
-                         <i class="material-icons">lock</i>
-                       </span>`
-                  }
-                </div>
-              </li>
-            `;
-          }).join('');
-          
-          materialsRows = `<ul class="materials-list">${videoRows}${noteRows}</ul>`;
-        }
-
-        return `
-          <div class="subject-item-wrapper" id="subject-${index}">
-            <button class="subject-header" data-index="${index}">
-              <div class="subject-header-left">
-                <div class="subject-icon-box">
-                  <i class="material-icons">${subj.icon || 'folder'}</i>
-                </div>
-                <div class="subject-title-subtext">
-                  <h3>${subj.name}</h3>
-                  <span>${videos.length} videos &bull; ${notes.length} booklets</span>
-                </div>
-              </div>
-              <div class="subject-header-right">
-                <i class="material-icons chevron">keyboard_arrow_down</i>
-              </div>
-            </button>
-            <div class="subject-content">
-              ${materialsRows}
-            </div>
+  // Render Subjects tab content (grid of cards or subject details)
+  let subjectsHtml = '';
+  
+  if (state.selectedSubjectIndex !== null && subjectsArray[state.selectedSubjectIndex]) {
+    const selectedSubj = subjectsArray[state.selectedSubjectIndex];
+    const videos = selectedSubj.videos || [];
+    const notes = selectedSubj.notes || [];
+    const subTab = state.selectedSubTab;
+    
+    let subTabContent = '';
+    
+    if (subTab === 'classes') {
+      subTabContent = `
+        <div class="subject-empty-placeholder">
+          <span style="font-size: 4.5rem; display: block; margin-bottom: 12px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.15));">😅</span>
+          <h4>No Classes Available</h4>
+          <p>Classes for ${selectedSubj.name} will be available soon.</p>
+        </div>
+      `;
+    } else if (subTab === 'videos') {
+      if (videos.length === 0) {
+        subTabContent = `
+          <div class="subject-empty-placeholder">
+            <span style="font-size: 4.5rem; display: block; margin-bottom: 12px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.15));">😅</span>
+            <h4>No Videos Available</h4>
+            <p>Videos for ${selectedSubj.name} will be available soon.</p>
           </div>
         `;
-      }).join('')
-    : `
-      <div class="materials-empty-box">
-        <i class="material-icons">cloud_off</i>
-        <p>Curriculum is being updated by Prakhar Sir. Please check back shortly.</p>
-      </div>`;
+      } else {
+        const videoCards = videos.map(vid => {
+          const unlocked = enrolled || vid.allowUnenrolledAccess;
+          const dateStr = vid.createdAt 
+            ? new Date(vid.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) 
+            : 'May 2, 2026';
+          const thumbnail = vid.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&auto=format&fit=crop&q=60';
+          
+          return `
+            <div class="video-card">
+              <div class="video-thumbnail-wrapper">
+                <img src="${thumbnail}" class="video-thumbnail" alt="${vid.title}" />
+                <div class="video-play-overlay">
+                  <i class="material-icons">play_circle_filled</i>
+                </div>
+                ${vid.duration ? `<span class="video-duration-badge">${vid.duration}</span>` : ''}
+              </div>
+              <div class="video-card-info">
+                <h4 class="video-title">${vid.title}</h4>
+                <div class="video-date">
+                  <i class="material-icons">schedule</i>
+                  <span>${dateStr}</span>
+                </div>
+                ${unlocked 
+                  ? `<button class="video-action-btn play-video-trigger" data-title="${vid.title}" data-url="${vid.videoUrl}">
+                       <i class="material-icons">play_arrow</i>
+                       <span>Watch Video</span>
+                     </button>`
+                  : `<button class="video-action-btn locked-action-trigger">
+                       <i class="material-icons">lock</i>
+                       <span>Watch Video</span>
+                     </button>`
+                }
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        subTabContent = `
+          <h4 class="video-heading">${selectedSubj.name} Videos</h4>
+          <div class="videos-grid">${videoCards}</div>
+        `;
+      }
+    } else if (subTab === 'notes') {
+      if (notes.length === 0) {
+        subTabContent = `
+          <div class="subject-empty-placeholder">
+            <span style="font-size: 4.5rem; display: block; margin-bottom: 12px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.15));">😅</span>
+            <h4>No Notes Available</h4>
+            <p>Notes for ${selectedSubj.name} will be available soon.</p>
+          </div>
+        `;
+      } else {
+        const noteCards = notes.map(note => {
+          const unlocked = enrolled || note.allowUnenrolledAccess;
+          const dateStr = note.createdAt 
+            ? new Date(note.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) 
+            : 'Apr 7, 2026';
+          
+          return `
+            <div class="note-card">
+              <div class="note-icon-wrapper">
+                <i class="material-icons">description</i>
+              </div>
+              <div class="note-card-info">
+                <h4 class="note-title">${note.title}</h4>
+                <div class="note-date">
+                  <i class="material-icons">schedule</i>
+                  <span>${dateStr}</span>
+                </div>
+                ${unlocked 
+                  ? `<a href="${note.fileUrl}" target="_blank" class="note-action-btn">
+                       <i class="material-icons">cloud_download</i>
+                       <span>Download PDF</span>
+                     </a>`
+                  : `<button class="note-action-btn locked-action-trigger">
+                       <i class="material-icons">lock</i>
+                       <span>Download PDF</span>
+                     </button>`
+                }
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        subTabContent = `
+          <h4 class="video-heading">${selectedSubj.name} Notes</h4>
+          <div class="notes-grid">${noteCards}</div>
+        `;
+      }
+    }
+    
+    subjectsHtml = `
+      <div class="subject-detail-view-container">
+        <button class="subject-back-header" id="subject-back-btn">
+          <i class="material-icons">arrow_back</i>
+          <span>${selectedSubj.name}</span>
+        </button>
+        
+        <nav class="subject-sub-tabs">
+          <button class="subject-sub-tab-btn ${subTab === 'classes' ? 'active' : ''}" data-subtab="classes">Classes</button>
+          <button class="subject-sub-tab-btn ${subTab === 'videos' ? 'active' : ''}" data-subtab="videos">Videos</button>
+          <button class="subject-sub-tab-btn ${subTab === 'notes' ? 'active' : ''}" data-subtab="notes">Notes</button>
+        </nav>
+        
+        <div class="subject-sub-tab-content">
+          ${subTabContent}
+        </div>
+      </div>
+    `;
+  } else {
+    // Render subjects grid
+    const subjectCards = subjectsArray.map((subj, index) => {
+      const theme = getSubjectTheme(subj.name, index);
+      const icon = subj.icon || theme.icon;
+      const videos = subj.videos || [];
+      const notes = subj.notes || [];
+      
+      return `
+        <div class="subject-card" data-index="${index}" style="--subject-color: ${theme.color}; --subject-bg: ${theme.bg};">
+          <div class="subject-card-icon-circle">
+            <i class="material-icons">${icon}</i>
+          </div>
+          <h3 class="subject-card-title">${subj.name}</h3>
+          <div class="subject-card-pills">
+            <div class="subject-pill">
+              <i class="material-icons">play_circle_outline</i>
+              <span>${videos.length} Lectures</span>
+            </div>
+            <div class="subject-pill">
+              <i class="material-icons">description</i>
+              <span>${notes.length} Notes</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    subjectsHtml = `
+      <div class="subjects-grid">
+        ${subjectCards}
+      </div>
+    `;
+  }
 
-  // Parse FAQs
+  // Parse FAQs / Updates
   const faqsArray = batch.faqs || [];
   const faqsHtml = faqsArray.length > 0
     ? faqsArray.map((faq, index) => {
@@ -533,7 +632,7 @@ function renderBatchDetailView(batchId) {
       <i class="material-icons" style="color:var(--success); font-size:24px;">check_circle</i>
       <div>
         <strong style="color:var(--text-primary); font-size:1.05rem; display:block; margin:0 0 4px 0;">You are enrolled in this course!</strong>
-        <span style="color:var(--text-secondary); font-size:0.875rem;">All video lectures, notes, mocks, and download booklets are unlocked. Select the "Curriculum" tab below to begin.</span>
+        <span style="color:var(--text-secondary); font-size:0.875rem;">All video lectures, notes, mocks, and download booklets are unlocked. Select the "Subjects" tab below to begin.</span>
       </div>
     </div>
   ` : '';
@@ -566,9 +665,9 @@ function renderBatchDetailView(batchId) {
       <main class="batch-detail-main">
         ${enrolledBanner}
         <nav class="tab-headers">
-          <button class="tab-btn active" data-tab="overview">Overview</button>
-          <button class="tab-btn" data-tab="curriculum">Curriculum</button>
-          <button class="tab-btn" data-tab="faq">FAQs</button>
+          <button class="tab-btn active" data-tab="overview">Details</button>
+          <button class="tab-btn" data-tab="curriculum">Subjects</button>
+          <button class="tab-btn" data-tab="faq">Updates</button>
         </nav>
         
         <!-- Tab Content Viewport -->
@@ -904,21 +1003,93 @@ function attachBatchDetailListeners(batchId) {
     });
   });
 
-  // Subjects Accordion expander
-  const subjectHeaders = document.querySelectorAll('.subject-header');
-  subjectHeaders.forEach(header => {
-    header.addEventListener('click', (e) => {
-      const wrapper = e.target.closest('.subject-item-wrapper');
-      const wasExpanded = wrapper.classList.contains('expanded');
+  // Subject Cards grid clicks
+  const subjectCards = document.querySelectorAll('.subject-card');
+  subjectCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const idx = parseInt(card.getAttribute('data-index'));
+      state.selectedSubjectIndex = idx;
+      state.selectedSubTab = 'classes'; // default tab
       
-      // Collapse all others
-      document.querySelectorAll('.subject-item-wrapper').forEach(w => w.classList.remove('expanded'));
+      // Redraw detail view
+      const viewport = document.getElementById('app-viewport');
+      viewport.innerHTML = renderBatchDetailView(batch.id);
+      attachBatchDetailListeners(batch.id);
       
-      if (!wasExpanded) {
-        wrapper.classList.add('expanded');
-      }
+      // Switch active tab header in UI to keep curriculum active
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      tabBtns.forEach(btn => {
+        if (btn.getAttribute('data-tab') === 'curriculum') {
+          btn.click();
+        }
+      });
     });
   });
+
+  // Detailed subject back arrow click
+  const backBtn = document.getElementById('subject-back-btn');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      state.selectedSubjectIndex = null;
+      
+      // Redraw detail view
+      const viewport = document.getElementById('app-viewport');
+      viewport.innerHTML = renderBatchDetailView(batch.id);
+      attachBatchDetailListeners(batch.id);
+      
+      // Switch active tab header in UI to keep curriculum active
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      tabBtns.forEach(btn => {
+        if (btn.getAttribute('data-tab') === 'curriculum') {
+          btn.click();
+        }
+      });
+    });
+  }
+
+  // Detailed subject sub-tabs clicks
+  const subTabBtns = document.querySelectorAll('.subject-sub-tab-btn');
+  subTabBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const subTabName = e.target.getAttribute('data-subtab');
+      state.selectedSubTab = subTabName;
+      
+      // Redraw detail view
+      const viewport = document.getElementById('app-viewport');
+      viewport.innerHTML = renderBatchDetailView(batch.id);
+      attachBatchDetailListeners(batch.id);
+      
+      // Switch active tab header in UI to keep curriculum active
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      tabBtns.forEach(btn => {
+        if (btn.getAttribute('data-tab') === 'curriculum') {
+          btn.click();
+        }
+      });
+    });
+  });
+
+  // Locked item click (auto-enroll support)
+  const lockedTriggers = document.querySelectorAll('.locked-action-trigger');
+  lockedTriggers.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      enrollInBatch(batch.id);
+      showToast('Enrollment Successful!', 'Course content unlocked.');
+      
+      const viewport = document.getElementById('app-viewport');
+      viewport.innerHTML = renderBatchDetailView(batch.id);
+      attachBatchDetailListeners(batch.id);
+      
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      tabBtns.forEach(btn => {
+        if (btn.getAttribute('data-tab') === 'curriculum') {
+          btn.click();
+        }
+      });
+    });
+  });
+
 
   // FAQs Accordion expander
   const faqQuestionBtns = document.querySelectorAll('.faq-question-btn');
@@ -1035,7 +1206,10 @@ async function initializeApp() {
     document.getElementById('footer-container').innerHTML = renderFooter();
     
     // Setup router listeners
-    window.addEventListener('hashchange', () => handleRouting());
+    window.addEventListener('hashchange', () => {
+      state.selectedSubjectIndex = null;
+      handleRouting();
+    });
     
     // Start periodic background auto-update polling (every 15 seconds)
     setInterval(() => {
