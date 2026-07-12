@@ -420,23 +420,21 @@ function renderBatchDetailView(batchId) {
   }
   
   const enrolled = isEnrolled(batch.id);
-  const original = parseInt(batch.originalPrice) || 0;
-  const discounted = parseInt(batch.discountedPrice) || 0;
-  const discountPct = Math.round(((original - discounted) / original) * 100);
-
-  // Parse Curriculum Subjects
   const subjectsArray = batch.subjects || [];
   
-  // Render Subjects and Material
-  // Render Subjects tab content (grid of cards or subject details)
-  let subjectsHtml = '';
+  // 1. Determine header title & sub-page rendering logic
+  let headerTitle = '';
+  let showSubTabs = false;
+  let curriculumContentHtml = '';
+  const subTab = state.selectedSubTab;
   
   if (state.selectedSubjectIndex !== null && subjectsArray[state.selectedSubjectIndex]) {
     const selectedSubj = subjectsArray[state.selectedSubjectIndex];
+    headerTitle = selectedSubj.name;
+    showSubTabs = true;
+    
     const videos = selectedSubj.videos || [];
     const notes = selectedSubj.notes || [];
-    const subTab = state.selectedSubTab;
-    
     let subTabContent = '';
     
     if (subTab === 'classes') {
@@ -548,199 +546,94 @@ function renderBatchDetailView(batchId) {
       }
     }
     
-    subjectsHtml = `
-      <div class="subject-detail-view-container">
-        <button class="subject-back-header" id="subject-back-btn">
-          <i class="material-icons">arrow_back</i>
-          <span>${selectedSubj.name}</span>
-        </button>
-        
-        <nav class="subject-sub-tabs">
-          <button class="subject-sub-tab-btn ${subTab === 'classes' ? 'active' : ''}" data-subtab="classes">Classes</button>
-          <button class="subject-sub-tab-btn ${subTab === 'videos' ? 'active' : ''}" data-subtab="videos">Videos</button>
-          <button class="subject-sub-tab-btn ${subTab === 'notes' ? 'active' : ''}" data-subtab="notes">Notes</button>
-        </nav>
-        
-        <div class="subject-sub-tab-content">
-          ${subTabContent}
-        </div>
+    curriculumContentHtml = `
+      <div class="subject-sub-tab-content">
+        ${subTabContent}
       </div>
     `;
   } else {
-    // Render subjects grid
-    const subjectCards = subjectsArray.map((subj, index) => {
-      const theme = getSubjectTheme(subj.name, index);
-      const icon = subj.icon || theme.icon;
-      const videos = subj.videos || [];
-      const notes = subj.notes || [];
-      
-      return `
-        <div class="subject-card" data-index="${index}" style="--subject-color: ${theme.color}; --subject-bg: ${theme.bg};">
-          <div class="subject-card-icon-circle">
-            <i class="material-icons">${icon}</i>
-          </div>
-          <h3 class="subject-card-title">${subj.name}</h3>
-          <div class="subject-card-pills">
-            <div class="subject-pill">
-              <i class="material-icons">play_circle_outline</i>
-              <span>${videos.length} Lectures</span>
-            </div>
-            <div class="subject-pill">
-              <i class="material-icons">description</i>
-              <span>${notes.length} Notes</span>
-            </div>
-          </div>
+    headerTitle = batch.title;
+    showSubTabs = false;
+    
+    if (subjectsArray.length === 0) {
+      curriculumContentHtml = `
+        <div class="subject-empty-placeholder">
+          <span style="font-size: 4.5rem; display: block; margin-bottom: 12px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.15));">📂</span>
+          <h4>No Subjects Available</h4>
+          <p>Curriculum is being updated by Prakhar Sir. Please check back shortly.</p>
         </div>
       `;
-    }).join('');
-    
-    subjectsHtml = `
-      <div class="subjects-grid">
-        ${subjectCards}
-      </div>
-    `;
-  }
-
-  // Parse FAQs / Updates
-  const faqsArray = batch.faqs || [];
-  const faqsHtml = faqsArray.length > 0
-    ? faqsArray.map((faq, index) => {
+    } else {
+      const subjectCards = subjectsArray.map((subj, index) => {
+        const theme = getSubjectTheme(subj.name, index);
+        const icon = subj.icon || theme.icon;
+        const videos = subj.videos || [];
+        const notes = subj.notes || [];
+        
         return `
-          <div class="faq-item-wrapper" id="faq-${index}">
-            <button class="faq-question-btn" data-index="${index}">
-              <span>${faq.question}</span>
-              <i class="material-icons">keyboard_arrow_down</i>
-            </button>
-            <div class="faq-answer">
-              ${faq.answer}
+          <div class="subject-card" data-index="${index}" style="--subject-color: ${theme.color}; --subject-bg: ${theme.bg};">
+            <div class="subject-card-icon-circle">
+              <i class="material-icons">${icon}</i>
+            </div>
+            <h3 class="subject-card-title">${subj.name}</h3>
+            <div class="subject-card-pills">
+              <div class="subject-pill">
+                <i class="material-icons">play_circle_outline</i>
+                <span>${videos.length} Lectures</span>
+              </div>
+              <div class="subject-pill">
+                <i class="material-icons">description</i>
+                <span>${notes.length} Notes</span>
+              </div>
             </div>
           </div>
         `;
-      }).join('')
-    : `<div class="materials-empty-box"><p>No FAQs available for this course.</p></div>`;
+      }).join('');
+      
+      curriculumContentHtml = `
+        <div class="subjects-grid">
+          ${subjectCards}
+        </div>
+      `;
+    }
+  }
 
-  // Count total materials
-  let totalVids = 0;
-  let totalNotes = 0;
-  subjectsArray.forEach(s => {
-    if (s.videos) totalVids += s.videos.length;
-    if (s.notes) totalNotes += s.notes.length;
-  });
-
-  const enrolledBanner = enrolled ? `
-    <div class="enrolled-banner" style="background:var(--success-bg); border:1px solid var(--success); padding:16px 20px; border-radius:12px; margin-bottom:24px; display:flex; align-items:center; gap:12px; animation: fadeIn 0.4s ease;">
-      <i class="material-icons" style="color:var(--success); font-size:24px;">check_circle</i>
-      <div>
-        <strong style="color:var(--text-primary); font-size:1.05rem; display:block; margin:0 0 4px 0;">You are enrolled in this course!</strong>
-        <span style="color:var(--text-secondary); font-size:0.875rem;">All video lectures, notes, mocks, and download booklets are unlocked. Select the "Subjects" tab below to begin.</span>
+  // 2. Render Full Screen Immersive Interface
+  return `
+    <div class="app-header-bar">
+      <div class="app-header-left">
+        <button class="app-back-btn" id="app-back-btn-trigger">
+          <i class="material-icons">arrow_back</i>
+        </button>
+        <h2 class="app-header-title">${headerTitle}</h2>
+      </div>
+      <div class="app-header-right">
+        ${!enrolled 
+          ? `<button class="app-enroll-header-btn" id="app-enroll-header-trigger">
+               <i class="material-icons">bolt</i>
+               <span>Enroll in Course</span>
+             </button>`
+          : `<span class="app-enrolled-badge">
+               <i class="material-icons">check_circle</i>
+               <span>Enrolled</span>
+             </span>`
+        }
       </div>
     </div>
-  ` : '';
 
-  return `
-    <section class="batch-detail-header-section">
-      <div class="batch-breadcrumb">
-        <a href="#home">Home</a>
-        <i class="material-icons" style="font-size:12px;">chevron_right</i>
-        <span>Batches</span>
-        <i class="material-icons" style="font-size:12px;">chevron_right</i>
-        <span>${batch.title}</span>
-      </div>
+    <div class="app-viewport-container">
+      ${showSubTabs 
+        ? `<nav class="subject-sub-tabs">
+             <button class="subject-sub-tab-btn ${subTab === 'classes' ? 'active' : ''}" data-subtab="classes">Classes</button>
+             <button class="subject-sub-tab-btn ${subTab === 'videos' ? 'active' : ''}" data-subtab="videos">Videos</button>
+             <button class="subject-sub-tab-btn ${subTab === 'notes' ? 'active' : ''}" data-subtab="notes">Notes</button>
+           </nav>`
+        : ''
+      }
       
-      <div class="batch-detail-title-grid">
-        <div class="batch-detail-header-text">
-          <span class="category">${batch.category || 'Law Entrance'}</span>
-          <h1>${batch.title}</h1>
-          <div class="batch-detail-header-stats">
-            <span><i class="material-icons">folder</i> ${subjectsArray.length} Modules</span>
-            <span><i class="material-icons">play_circle_filled</i> ${totalVids} Lecture Videos</span>
-            <span><i class="material-icons">description</i> ${totalNotes} Study PDFs</span>
-          </div>
-        </div>
+      <div class="app-main-content-pane">
+        ${curriculumContentHtml}
       </div>
-    </section>
-
-    <div class="batch-detail-body">
-      <!-- Main Content Tabs -->
-      <main class="batch-detail-main">
-        ${enrolledBanner}
-        <nav class="tab-headers">
-          <button class="tab-btn active" data-tab="overview">Details</button>
-          <button class="tab-btn" data-tab="curriculum">Subjects</button>
-          <button class="tab-btn" data-tab="faq">Updates</button>
-        </nav>
-        
-        <!-- Tab Content Viewport -->
-        <div class="tab-content">
-          <!-- Overview Tab -->
-          <div class="tab-pane active" id="pane-overview">
-            <article class="overview-rich page-content-rich">
-              ${batch.description}
-            </article>
-          </div>
-          
-          <!-- Curriculum Tab -->
-          <div class="tab-pane" id="pane-curriculum">
-            <div class="curriculum-intro-bar">
-              <div class="left">
-                <i class="material-icons" style="color:var(--gold);">info</i>
-                <span>${enrolled ? 'All class resources unlocked!' : 'Mock materials locked. Enroll to unlock all materials.'}</span>
-              </div>
-              <span class="unlock-pill">
-                <i class="material-icons" style="font-size:14px;">${enrolled ? 'lock_open' : 'lock'}</i>
-                <span>${enrolled ? 'Access Unlocked' : 'Requires Enrollment'}</span>
-              </span>
-            </div>
-            
-            <div class="curriculum-accordion">
-              ${subjectsHtml}
-            </div>
-          </div>
-          
-          <!-- FAQ Tab -->
-          <div class="tab-pane" id="pane-faq">
-            <div class="faq-accordion">
-              ${faqsHtml}
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <!-- Sticky Purchase Sidebar -->
-      <aside class="batch-detail-sidebar">
-        <div class="purchase-sticky-card">
-          <div class="purchase-card-img-container">
-            <img src="${batch.imageUrl}" alt="${batch.title}" class="purchase-card-img" />
-          </div>
-          
-          <div class="purchase-card-details">
-            <div class="price-box">
-              <span class="discounted-lg">₹${discounted.toLocaleString('en-IN')}</span>
-              <span class="original-lg">₹${original.toLocaleString('en-IN')}</span>
-              <span class="discount-tag">${discountPct}% OFF</span>
-            </div>
-            
-            ${enrolled 
-              ? `<button class="enroll-now-btn" style="background:var(--success); color:#fff; box-shadow:none; cursor:default;">
-                   <i class="material-icons">check_circle</i>
-                   <span>Unlocked & Enrolled</span>
-                 </button>`
-              : `<button class="enroll-now-btn" id="enroll-btn-trigger">
-                   <i class="material-icons">bolt</i>
-                   <span>Enroll in Batch</span>
-                 </button>`
-            }
-            
-            <ul class="purchase-highlights">
-              <li><i class="material-icons">check</i><span>Access to ${totalVids} video lectures</span></li>
-              <li><i class="material-icons">check</i><span>Download ${totalNotes} static GK/Mock PDFs</span></li>
-              <li><i class="material-icons">check</i><span>Personal supervision by Prakhar Sir</span></li>
-              <li><i class="material-icons">check</i><span>Compulsory daily submission DPPs</span></li>
-              <li><i class="material-icons">check</i><span>Monthly Parents-Prakhar progress meet</span></li>
-            </ul>
-          </div>
-        </div>
-      </aside>
     </div>
   `;
 }
@@ -902,6 +795,13 @@ function handleRouting(skipSync = false) {
   const viewport = document.getElementById('app-viewport');
   if (!viewport) return;
   
+  // Immersive App View configuration (hides standard header/footer inside courses)
+  if (hash.startsWith('#batch/')) {
+    document.body.classList.add('in-app-view');
+  } else {
+    document.body.classList.remove('in-app-view');
+  }
+  
   // Scroll to top
   window.scrollTo(0, 0);
   
@@ -986,128 +886,62 @@ function attachBatchDetailListeners(batchId) {
   const batch = state.batches.find(b => b.id === batchId);
   if (!batch) return;
   
-  // Tab switcher logic
-  const tabBtns = document.querySelectorAll('.tab-btn');
-  tabBtns.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const tabName = e.target.getAttribute('data-tab');
-      
-      // Update active header button
-      tabBtns.forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
-      
-      // Update active content pane
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-      const pane = document.getElementById(`pane-${tabName}`);
-      if (pane) pane.classList.add('active');
+  // 1. Back button behavior in header
+  const backBtn = document.getElementById('app-back-btn-trigger');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      if (state.selectedSubjectIndex !== null) {
+        state.selectedSubjectIndex = null;
+        const viewport = document.getElementById('app-viewport');
+        viewport.innerHTML = renderBatchDetailView(batch.id);
+        attachBatchDetailListeners(batch.id);
+      } else {
+        window.location.hash = '#home';
+      }
     });
-  });
+  }
 
-  // Subject Cards grid clicks
+  // 2. Enroll button behavior in header
+  const enrollHeaderBtn = document.getElementById('app-enroll-header-trigger');
+  if (enrollHeaderBtn) {
+    enrollHeaderBtn.addEventListener('click', () => {
+      enrollInBatch(batch.id);
+      showToast('Enrollment Successful!', `You are now enrolled in ${batch.title}`);
+      
+      const viewport = document.getElementById('app-viewport');
+      viewport.innerHTML = renderBatchDetailView(batch.id);
+      attachBatchDetailListeners(batch.id);
+    });
+  }
+
+  // 3. Subject Cards grid clicks
   const subjectCards = document.querySelectorAll('.subject-card');
   subjectCards.forEach(card => {
     card.addEventListener('click', () => {
       const idx = parseInt(card.getAttribute('data-index'));
       state.selectedSubjectIndex = idx;
-      state.selectedSubTab = 'classes'; // default tab
+      state.selectedSubTab = 'classes'; // reset default subtab
       
-      // Redraw detail view
       const viewport = document.getElementById('app-viewport');
       viewport.innerHTML = renderBatchDetailView(batch.id);
       attachBatchDetailListeners(batch.id);
-      
-      // Switch active tab header in UI to keep curriculum active
-      const tabBtns = document.querySelectorAll('.tab-btn');
-      tabBtns.forEach(btn => {
-        if (btn.getAttribute('data-tab') === 'curriculum') {
-          btn.click();
-        }
-      });
     });
   });
 
-  // Detailed subject back arrow click
-  const backBtn = document.getElementById('subject-back-btn');
-  if (backBtn) {
-    backBtn.addEventListener('click', () => {
-      state.selectedSubjectIndex = null;
-      
-      // Redraw detail view
-      const viewport = document.getElementById('app-viewport');
-      viewport.innerHTML = renderBatchDetailView(batch.id);
-      attachBatchDetailListeners(batch.id);
-      
-      // Switch active tab header in UI to keep curriculum active
-      const tabBtns = document.querySelectorAll('.tab-btn');
-      tabBtns.forEach(btn => {
-        if (btn.getAttribute('data-tab') === 'curriculum') {
-          btn.click();
-        }
-      });
-    });
-  }
-
-  // Detailed subject sub-tabs clicks
+  // 4. Sub-tab clicks
   const subTabBtns = document.querySelectorAll('.subject-sub-tab-btn');
   subTabBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       const subTabName = e.target.getAttribute('data-subtab');
       state.selectedSubTab = subTabName;
       
-      // Redraw detail view
       const viewport = document.getElementById('app-viewport');
       viewport.innerHTML = renderBatchDetailView(batch.id);
       attachBatchDetailListeners(batch.id);
-      
-      // Switch active tab header in UI to keep curriculum active
-      const tabBtns = document.querySelectorAll('.tab-btn');
-      tabBtns.forEach(btn => {
-        if (btn.getAttribute('data-tab') === 'curriculum') {
-          btn.click();
-        }
-      });
     });
   });
 
-  // Locked item click (auto-enroll support)
-  const lockedTriggers = document.querySelectorAll('.locked-action-trigger');
-  lockedTriggers.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      enrollInBatch(batch.id);
-      showToast('Enrollment Successful!', 'Course content unlocked.');
-      
-      const viewport = document.getElementById('app-viewport');
-      viewport.innerHTML = renderBatchDetailView(batch.id);
-      attachBatchDetailListeners(batch.id);
-      
-      const tabBtns = document.querySelectorAll('.tab-btn');
-      tabBtns.forEach(btn => {
-        if (btn.getAttribute('data-tab') === 'curriculum') {
-          btn.click();
-        }
-      });
-    });
-  });
-
-
-  // FAQs Accordion expander
-  const faqQuestionBtns = document.querySelectorAll('.faq-question-btn');
-  faqQuestionBtns.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const wrapper = e.target.closest('.faq-item-wrapper');
-      const wasExpanded = wrapper.classList.contains('expanded');
-      
-      // Collapse all others
-      document.querySelectorAll('.faq-item-wrapper').forEach(w => w.classList.remove('expanded'));
-      
-      if (!wasExpanded) {
-        wrapper.classList.add('expanded');
-      }
-    });
-  });
-
-  // Video Play handler
+  // 5. Video Play handler
   const playTriggers = document.querySelectorAll('.play-video-trigger');
   playTriggers.forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -1119,39 +953,19 @@ function attachBatchDetailListeners(batchId) {
     });
   });
 
-  // Enroll button click handler
-  const enrollBtn = document.getElementById('enroll-btn-trigger');
-  if (enrollBtn) {
-    enrollBtn.addEventListener('click', () => {
-      // 1. Instantly enroll
+  // 6. Locked item clicks (auto-enroll support)
+  const lockedTriggers = document.querySelectorAll('.locked-action-trigger');
+  lockedTriggers.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       enrollInBatch(batch.id);
+      showToast('Enrollment Successful!', 'Course content unlocked.');
       
-      // 2. Show toast
-      showToast('Enrollment Successful!', `You are now enrolled in ${batch.title}`);
-      
-      // 3. Re-render the batch detail view so that the locked items become unlocked
       const viewport = document.getElementById('app-viewport');
       viewport.innerHTML = renderBatchDetailView(batch.id);
       attachBatchDetailListeners(batch.id);
-      
-      // 4. Set the Curriculum tab as active
-      const tabBtns = document.querySelectorAll('.tab-btn');
-      tabBtns.forEach(btn => {
-        if (btn.getAttribute('data-tab') === 'curriculum') {
-          btn.click();
-        }
-      });
-      
-      // 5. Scroll the user up to the main section to see the unlocked content
-      const mainContainer = document.querySelector('.batch-detail-main');
-      if (mainContainer) {
-        mainContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
     });
-  }
-
+  });
 }
 
 function attachContactListeners() {

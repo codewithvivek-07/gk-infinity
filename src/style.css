@@ -2187,3 +2187,131 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* 15. Immersive App View Fullscreen Dashboard */
+body.in-app-view #gki-navbar,
+body.in-app-view .footer {
+  display: none !important;
+}
+
+body.in-app-view #app-viewport {
+  margin-top: 0 !important;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: hsl(224, 71%, 4%);
+}
+
+.app-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: var(--glass-blur);
+}
+
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.app-back-btn {
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.app-back-btn:hover {
+  background: hsla(255, 100%, 100%, 0.1);
+  color: var(--primary-hover);
+}
+
+.app-back-btn i {
+  font-size: 1.8rem;
+}
+
+.app-header-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.app-enroll-header-btn {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 30px;
+  padding: 8px 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px var(--primary-glow);
+  transition: all 0.3s ease;
+}
+
+.app-enroll-header-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+.app-enrolled-badge {
+  color: var(--success);
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--success-bg);
+  padding: 6px 16px;
+  border-radius: 30px;
+  border: 1px solid var(--success);
+}
+
+.app-viewport-container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main-content-pane {
+  flex-grow: 1;
+  margin-top: 10px;
+}
+
+/* Responsive grid overrides for fullscreen subjects */
+@media (max-width: 768px) {
+  .subjects-grid, .videos-grid, .notes-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .app-header-bar {
+    padding: 12px 16px !important;
+  }
+  .app-header-title {
+    font-size: 1.1rem !important;
+  }
+  .app-viewport-container {
+    padding: 16px !important;
+  }
+}
