@@ -758,9 +758,47 @@ function renderContactPage(contactPage) {
 }
 
 // ----------------------------------------------------
+// AUTO-UPDATE & BACKGROUND DATA SYNC ENGINE
+// ----------------------------------------------------
+let isSyncing = false;
+
+async function syncData(forceRender = false) {
+  if (isSyncing) return;
+  isSyncing = true;
+  try {
+    const [batchesData, pagesData] = await Promise.all([
+      getBatches(),
+      getPages()
+    ]);
+    
+    // Compare new data with current state to avoid redrawing if unchanged
+    const batchesChanged = JSON.stringify(batchesData) !== JSON.stringify(state.batches);
+    const pagesChanged = JSON.stringify(pagesData) !== JSON.stringify(state.pages);
+    
+    if (batchesChanged || pagesChanged || forceRender) {
+      state.batches = batchesData;
+      state.pages = pagesData;
+      
+      // Prevent redrawing if user is actively watching a video or checking out
+      const videoModal = document.getElementById('video-modal');
+      const isVideoOpen = videoModal && !videoModal.classList.contains('hidden');
+      
+      if (forceRender || !isVideoOpen) {
+        console.log('[Sync Engine] Datasets updated from Firestore. Re-rendering current view.');
+        handleRouting(true); // Skip nested sync triggering
+      }
+    }
+  } catch (error) {
+    console.error("[Sync Engine Error] Background synchronization failed:", error);
+  } finally {
+    isSyncing = false;
+  }
+}
+
+// ----------------------------------------------------
 // ROUTER & NAVIGATION ENGINE
 // ----------------------------------------------------
-function handleRouting() {
+function handleRouting(skipSync = false) {
   const hash = window.location.hash || '#home';
   const viewport = document.getElementById('app-viewport');
   if (!viewport) return;
@@ -809,6 +847,11 @@ function handleRouting() {
       const el = document.getElementById('batches-section');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     }, 100);
+  }
+
+  // Trigger background sync on navigation if not skipped
+  if (!skipSync) {
+    syncData();
   }
 }
 
@@ -980,16 +1023,10 @@ async function initializeApp() {
   showLoader();
   
   try {
-    // Fetch live datasets (or cache fallback)
-    const [batchesData, pagesData] = await Promise.all([
-      getBatches(),
-      getPages()
-    ]);
-    
-    state.batches = batchesData;
-    state.pages = pagesData;
+    // Run initial sync (force drawing the viewport)
+    await syncData(true);
   } catch (error) {
-    console.error("Critical error building datasets:", error);
+    console.error("Critical error building initial datasets:", error);
   } finally {
     // Hide loader
     hideLoader();
@@ -998,10 +1035,12 @@ async function initializeApp() {
     document.getElementById('footer-container').innerHTML = renderFooter();
     
     // Setup router listeners
-    window.addEventListener('hashchange', handleRouting);
+    window.addEventListener('hashchange', () => handleRouting());
     
-    // Mount first view
-    handleRouting();
+    // Start periodic background auto-update polling (every 15 seconds)
+    setInterval(() => {
+      syncData();
+    }, 15000);
   }
 
   // Setup Global Modal Listeners
