@@ -9,10 +9,10 @@ const PAGES_API_URL = '/api/pages';
  */
 export async function getBatches() {
   try {
-    const response = await fetch(`${BATCHES_API_URL}?_t=${Date.now()}`, {
+    const response = await fetch(BATCHES_API_URL, {
+      cache: 'no-store',
       headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
+        'Accept': 'application/json'
       }
     });
     if (!response.ok) {
@@ -34,10 +34,10 @@ export async function getBatches() {
  */
 export async function getPages() {
   try {
-    const response = await fetch(`${PAGES_API_URL}?_t=${Date.now()}`, {
+    const response = await fetch(PAGES_API_URL, {
+      cache: 'no-store',
       headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
+        'Accept': 'application/json'
       }
     });
     if (!response.ok) {
@@ -53,4 +53,5 @@ export async function getPages() {
     return fallbackPages;
   }
 }
+
 
