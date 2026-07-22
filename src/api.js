@@ -9,7 +9,12 @@ const PAGES_API_URL = '/api/pages';
  */
 export async function getBatches() {
   try {
-    const response = await fetch(BATCHES_API_URL);
+    const response = await fetch(`${BATCHES_API_URL}?_t=${Date.now()}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -29,7 +34,12 @@ export async function getBatches() {
  */
 export async function getPages() {
   try {
-    const response = await fetch(PAGES_API_URL);
+    const response = await fetch(`${PAGES_API_URL}?_t=${Date.now()}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -43,3 +53,4 @@ export async function getPages() {
     return fallbackPages;
   }
 }
+

@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://firestore.googleapis.com/v1/projects/edufinity-26856/databases/(default)/documents/:path*"
+    }
+  ]
+}
